@@ -1,0 +1,8 @@
+{
+  "name": "Snap Inspect AI",
+  "description": "Professional-grade AI inspection tool with Live Co-Pilot, Regulatory Search, and Audio Debriefing.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
