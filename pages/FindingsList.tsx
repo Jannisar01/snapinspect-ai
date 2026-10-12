@@ -11,6 +11,15 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Severity, Finding, LifecycleStatus, UserRole } from '../types';
+import { checkReference } from '../services/standardsGuard';
+
+// Unregistered references stay visible but are labelled; reports leave them out.
+const referenceLabel = (reference?: string) => {
+  const check = checkReference(reference);
+  if (check.status === 'REGISTRY') return `${check.standard!.code}: ${check.standard!.title}`;
+  if (check.status === 'UNREGISTERED') return `${reference} (not in the certified registry; unverified, left out of reports)`;
+  return 'Awaiting Legal Mapping.';
+};
 
 const CollapsibleText: React.FC<{ title: string; content: string; icon?: React.ReactNode; defaultExpanded?: boolean; variant?: 'default' | 'dark' }> = ({ 
   title, content, icon, defaultExpanded = false, variant = 'default' 
@@ -222,7 +231,7 @@ const FindingsList: React.FC = () => {
                        <CollapsibleText 
                         title="Compliance Node" 
                         icon={<ShieldCheck className="w-3 h-3 text-[#2563EB]" />} 
-                        content={finding.regulatoryReference || 'Awaiting Legal Mapping.'} 
+                        content={referenceLabel(finding.regulatoryReference)} 
                        />
                     </div>
                   </div>

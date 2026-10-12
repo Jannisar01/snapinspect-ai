@@ -82,6 +82,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ onClose }) => {
         severity: analysis.severity,
         recommendedAction: analysis.recommendedAction,
         regulatoryReference: analysis.regulatoryReference,
+        linkedStandards: analysis.linkedStandards,
         confidence: analysis.confidence as ConfidenceLevel
       });
       setLastLogStatus(`LOGGED: ${analysis.title}`);
@@ -177,7 +178,7 @@ export const LiveInspector: React.FC<LiveInspectorProps> = ({ onClose }) => {
             if (message.serverContent?.inputTranscription) { inputTranscriptionRef.current += message.serverContent.inputTranscription.text; setTranscribingInput(inputTranscriptionRef.current); }
             if (message.serverContent?.outputTranscription) { outputTranscriptionRef.current += message.serverContent.outputTranscription.text; setTranscribingOutput(outputTranscriptionRef.current); }
             if (message.serverContent?.turnComplete) {
-              setHistory(prev => [...prev, { type: 'user', text: inputTranscriptionRef.current }, { type: 'bot', text: outputTranscriptionRef.current }].slice(-20));
+              setHistory(prev => [...prev, { type: 'user' as const, text: inputTranscriptionRef.current }, { type: 'bot' as const, text: outputTranscriptionRef.current }].slice(-20));
               inputTranscriptionRef.current = ''; outputTranscriptionRef.current = ''; setTranscribingInput(''); setTranscribingOutput('');
             }
             if (message.toolCall) {

@@ -7,6 +7,7 @@ import { ArrowLeft, FileText, Download, Volume2, Loader2, Pause, ShieldCheck, Fi
 import { useNavigate } from 'react-router-dom';
 import { jsPDF } from "jspdf";
 import ReactMarkdown from "react-markdown";
+import { findUnregisteredCitations, selectReportFindings } from "../services/standardsGuard";
 
 const ReportGenerator: React.FC = () => {
   const { currentInspection, saveInspectionReport, updateInspectionMetadata } = useInspection();
@@ -30,6 +31,9 @@ const ReportGenerator: React.FC = () => {
     navigate('/');
     return null;
   }
+
+  const { included, excludedDrafts } = selectReportFindings(currentInspection);
+  const strayCitations = reportText ? findUnregisteredCitations(reportText) : [];
 
   const handleGenerate = async () => {
     setIsLoading(true);
@@ -75,6 +79,7 @@ const ReportGenerator: React.FC = () => {
   };
 
   const handleExportPDF = () => {
+    if (strayCitations.length > 0 && !window.confirm(`The report names ${strayCitations.join(', ')}, not in the certified registry. Export anyway?`)) return;
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -148,8 +153,15 @@ const ReportGenerator: React.FC = () => {
            </div>
         </div>
 
+        <div className="mb-6 p-4 bg-white border-2 border-zinc-300 rounded-sm space-y-1 text-[10px] font-bold uppercase tracking-widest">
+           <div className="text-emerald-700">{included.length} verified finding{included.length === 1 ? '' : 's'} included</div>
+           {excludedDrafts.length > 0 && (
+             <div className="text-orange-600">{excludedDrafts.length} AI draft{excludedDrafts.length === 1 ? '' : 's'} left out until a supervisor verifies {excludedDrafts.length === 1 ? 'it' : 'them'}</div>
+           )}
+        </div>
+
         <div className="mt-auto space-y-3">
-             <Button onClick={handleGenerate} isLoading={isLoading} className="w-full py-4 font-bold bg-zinc-900 border-b-4 border-orange-600">
+             <Button onClick={handleGenerate} isLoading={isLoading} disabled={included.length === 0} className="w-full py-4 font-bold bg-zinc-900 border-b-4 border-orange-600">
                 <FileCog className="w-5 h-5 mr-2" /> {reportText ? 'UPDATE REVISION' : 'INITIAL DRAFT'}
             </Button>
             {reportText && (
@@ -214,6 +226,12 @@ const ReportGenerator: React.FC = () => {
                 </div>
                 <div className="border-b border-zinc-950 mt-6 mb-1.5"></div>
              </div>
+
+             {strayCitations.length > 0 && (
+               <div className="mb-6 p-3 border-2 border-red-600 bg-red-50 text-red-700 text-[11px] font-bold z-10">
+                 This report names {strayCitations.join(', ')}, which {strayCitations.length === 1 ? 'is' : 'are'} not in the certified registry. Remove or check {strayCitations.length === 1 ? 'it' : 'them'} before export.
+               </div>
+             )}
 
              {reportText ? (
                <div className="prose prose-sm prose-zinc max-w-none text-zinc-900 leading-relaxed text-[13px] flex-1 z-10" style={{ fontFamily: '"Times New Roman", Times, serif' }}>

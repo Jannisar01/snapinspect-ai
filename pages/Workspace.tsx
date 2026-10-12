@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useId, useCallback } from 'react';
 import { useInspection } from '../context/InspectionContext';
 import { generateFindingFromImage } from '../services/geminiService';
+import { checkReference, enforceRegistry } from '../services/standardsGuard';
 import { Button, Input, Textarea, Select, Badge } from '../components/ui';
 import { 
   Upload, Sparkles, ChevronRight, Check, AlertTriangle, 
@@ -53,6 +54,7 @@ const Workspace: React.FC = () => {
   const [userNotes, setUserNotes] = useState('');
   const [regulatory, setRegulatory] = useState('');
   const [linkedStandards, setLinkedStandards] = useState<RegulatoryStandard[]>([]);
+  const [aiUnverifiedRef, setAiUnverifiedRef] = useState('');
   const [visualConf, setVisualConf] = useState(0);
   const [regConf, setRegConf] = useState(0);
   const [confidence, setConfidence] = useState<ConfidenceLevel | undefined>(undefined);
@@ -152,6 +154,7 @@ const Workspace: React.FC = () => {
     setAction('');
     setUserNotes('');
     setRegulatory('');
+    setAiUnverifiedRef('');
     setLinkedStandards([]);
     setVisualConf(0);
     setRegConf(0);
@@ -258,6 +261,7 @@ const Workspace: React.FC = () => {
       setSeverity(result.severity);
       setAction(result.recommendedAction);
       setRegulatory(result.regulatoryReference || '');
+      setAiUnverifiedRef(result.unverifiedReference || '');
       setLinkedStandards(result.linkedStandards || []);
       setVisualConf(result.visualConfidence || 0);
       setRegConf(result.regulatoryConfidence || 0);
@@ -276,6 +280,9 @@ const Workspace: React.FC = () => {
       return;
     }
 
+    // the reference is canonicalised if it is in the registry; anything else is saved as typed and
+    // flagged as unregistered wherever it is shown, and never passed to the report
+    const enforced = enforceRegistry({ regulatoryReference: regulatory, linkedStandards } as any);
     const payload = {
       imageId: selectedImage.id,
       imageUrl: selectedImage.url,
@@ -284,8 +291,8 @@ const Workspace: React.FC = () => {
       category: category as Category,
       severity: severity as Severity,
       recommendedAction: action,
-      regulatoryReference: regulatory,
-      linkedStandards,
+      regulatoryReference: enforced.regulatoryReference || regulatory.trim(),
+      linkedStandards: enforced.linkedStandards || [],
       confidence,
       visualConfidence: visualConf,
       regulatoryConfidence: regConf
@@ -453,6 +460,7 @@ const Workspace: React.FC = () => {
                     className="bg-transparent border-none text-white text-lg font-bold font-oswald uppercase p-0 focus:ring-0 placeholder-white/20"
                    />
                 </div>
+                <ReferenceStatusNote reference={regulatory} aiUnverified={aiUnverifiedRef} />
               </div>
 
               {linkedStandards.length > 0 && (
@@ -505,3 +513,27 @@ const ConfidenceIndicator = ({ label, val }: { label: string, val: number }) => 
 );
 
 export default Workspace;
+
+// Says whether the reference is in the certified registry (services/standardsGuard.ts).
+const ReferenceStatusNote: React.FC<{ reference: string; aiUnverified: string }> = ({ reference, aiUnverified }) => {
+  const check = checkReference(reference);
+  return (
+    <div className="space-y-1">
+      {check.status === 'REGISTRY' && (
+        <p className="text-[10px] font-bold text-[#059669] uppercase tracking-widest">
+          In certified registry: {check.standard!.title}
+        </p>
+      )}
+      {check.status === 'UNREGISTERED' && (
+        <p className="text-[10px] font-bold text-[#DC2626] uppercase tracking-widest">
+          Not in the certified registry. Saved as unverified and left out of reports.
+        </p>
+      )}
+      {aiUnverified && (
+        <p className="text-[10px] font-bold text-[#D97706] uppercase tracking-widest">
+          AI suggested "{aiUnverified}", which is not in the registry, so it was not applied.
+        </p>
+      )}
+    </div>
+  );
+};
