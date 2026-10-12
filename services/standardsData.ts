@@ -50,6 +50,4 @@ export const AUTHENTICATED_STANDARDS: RegulatoryStandard[] = [
   }
 ];
 
-export const getStandardByCode = (code: string) => {
-  return AUTHENTICATED_STANDARDS.find(s => s.code.includes(code) || code.includes(s.code));
-};
+// Look up a reference with resolveStandard in standardsGuard.ts (exact code match).

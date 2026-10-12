@@ -115,4 +115,6 @@ export interface AIAnalysisResult {
   linkedStandards?: RegulatoryStandard[];
   visualConfidence?: number;
   regulatoryConfidence?: number;
+  /** a reference the model gave that is not in the certified registry; never used as the finding's reference */
+  unverifiedReference?: string;
 }

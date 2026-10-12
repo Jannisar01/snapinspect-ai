@@ -2,6 +2,7 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { AIAnalysisResult, Category, Severity, Finding, Inspection } from "../types";
 import { AUTHENTICATED_STANDARDS } from "./standardsData";
+import { buildFindingsSummary, enforceRegistry, selectReportFindings } from "./standardsGuard";
 
 const findingSchema = {
   type: Type.OBJECT,
@@ -88,8 +89,8 @@ export const generateFindingFromImage = async (
     const text = response.text;
     if (!text) throw new Error("Linkage Failure");
     
-    const result = JSON.parse(text) as AIAnalysisResult;
-    return { ...result };
+    // the registry is enforced here, not just requested in the prompt
+    return enforceRegistry(JSON.parse(text) as AIAnalysisResult);
 
   } catch (error) {
     console.error("Neural Scan Error:", error);
@@ -139,14 +140,16 @@ export const chatWithComplianceExpert = async (
 export const generateReportFromFindings = async (inspection: Inspection): Promise<string> => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const findingsSummary = inspection.findings.map(f => (
-      `## ${f.title}\n- **Ref**: ${f.regulatoryReference}\n- **Priority**: ${f.severity}\n- **Observation**: ${f.description}`
-    )).join('\n\n');
+    // only supervisor-verified findings go into the report; drafts stay out
+    const { included } = selectReportFindings(inspection);
+    if (included.length === 0) throw new Error("No verified findings to report.");
+    const findingsSummary = buildFindingsSummary(included);
 
     const inspectionDate = new Date().toISOString().slice(0, 10);
     const prompt = `Generate a professional inspection report for site ${inspection.name}.
 Inspection date: ${inspectionDate}. Use exactly this date.
 Use only the facts below. Do not invent dates, names, locations or measurements; write "Not recorded" for anything missing.
+Cite only the regulation given in each finding's Ref line. Do not name any other regulation or standard.
 Format with Markdown headings, bold labels and bullet lists. Do not use tables.
 Findings:
 ${findingsSummary}`;
