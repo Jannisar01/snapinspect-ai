@@ -45,7 +45,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const verifyProject = (key: string) => {
-    const validKeys = ['427726', '536424', '070400'];
+    const validKeys = ['111111', '222222', '333333'];
     if (validKeys.includes(key)) {
       setProjectKey(key);
       sessionStorage.setItem('snap_project_key', key);
