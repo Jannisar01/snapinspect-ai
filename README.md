@@ -1,5 +1,7 @@
 # SnapInspect AI
 
+**Case study:** [sanaullahjannisar.com/work/snapinspect](https://sanaullahjannisar.com/work/snapinspect/), with the story, results and architecture. Built by [Sanaullah Jannisar](https://sanaullahjannisar.com), AI engineer.
+
 SnapInspect turns a site photo into a drafted safety finding tied to a specific OSHA or ISO 45001 standard, then compiles verified findings into an inspection report. The model picks the standard from a fixed registry of six that travels with every call, and the code rejects any reference that is not on that list.
 
 **Status:** a demo build that runs locally. There is no public deployment right now. Sign-in is simulated in the browser and findings live in the browser's local storage, so it is not ready for field use.
